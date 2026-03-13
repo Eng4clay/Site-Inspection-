@@ -3,231 +3,160 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Matrix Security Analyzer</title>
-    <!-- Tailwind CSS -->
+    <title>SecureAnalyzer Pro - أداة تحليل أمان المواقع المتقدمة</title>
+    <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Chart.js -->
+    <!-- Chart.js للرسوم البيانية -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <!-- Font Awesome -->
+    <!-- Font Awesome للأيقونات -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts for monospace -->
-    <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600&display=swap" rel="stylesheet">
+    <!-- Prism.js لتلوين الأكواد (اختياري، سنستخدم تنسيقاً بسيطاً) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
     <style>
-        * {
-            font-family: 'Source Code Pro', monospace;
+        @keyframes spin {
+            to { transform: rotate(360deg); }
         }
-        body {
-            background: black;
-            margin: 0;
-            overflow-x: hidden;
-            color: #00ff00;
-        }
-        /* Matrix rain background */
-        #matrix-canvas {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            opacity: 0.2;
-            pointer-events: none;
-        }
-        /* Glowing text effect */
-        .glow {
-            text-shadow: 0 0 5px #00ff00, 0 0 10px #00ff00;
-        }
-        .neon-border {
-            border: 1px solid #00ff00;
-            box-shadow: 0 0 10px #00ff00;
-        }
-        .hacker-box {
-            background: rgba(0, 20, 0, 0.8);
-            backdrop-filter: blur(5px);
-            border: 1px solid #00ff00;
-            border-radius: 8px;
-            transition: all 0.3s;
-        }
-        .hacker-box:hover {
-            box-shadow: 0 0 20px #00ff00;
-            border-color: #00ff00;
-        }
-        .code-panel {
-            background: #0a0f0a;
-            border-left: 4px solid #00ff00;
-            font-family: 'Source Code Pro', monospace;
-            font-size: 13px;
-            direction: ltr;
-            text-align: left;
-            max-height: 300px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            color: #cfc;
-        }
-        .code-panel .highlight {
-            background: #2a5a2a;
-            color: #fff;
-            font-weight: bold;
-        }
-        .badge-sev {
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 12px;
-            font-weight: bold;
-        }
-        .severity-high { background: #7f1d1d; color: #fecaca; }
-        .severity-medium { background: #854d0e; color: #fed7aa; }
-        .severity-low { background: #1e3a8a; color: #bfdbfe; }
-        .gradient-text {
-            background: linear-gradient(45deg, #00ff00, #00cc00);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        /* Custom scrollbar */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #1a1a1a;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #00ff00;
-            border-radius: 4px;
-        }
-        /* Loading animation */
-        .loader-matrix {
-            width: 60px;
-            height: 60px;
-            border: 3px solid #1a3a1a;
-            border-top: 3px solid #00ff00;
-            border-radius: 50%;
+        .loader {
+            border-top-color: transparent;
             animation: spin 1s linear infinite;
         }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        .gradient-bg {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
         }
-        .fade-in {
-            animation: fadeIn 0.5s ease-in-out;
+        .card-hover {
+            transition: all 0.3s ease;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .code-block {
+            background: #0d1117;
+            color: #e6edf3;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 0.9rem;
+            direction: ltr;
+            text-align: left;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            border: 1px solid #30363d;
+        }
+        .tab-button.active {
+            background: #3b82f6;
+            color: white;
+        }
+        .severity-high { background: #fee2e2; color: #991b1b; }
+        .severity-medium { background: #fef3c7; color: #92400e; }
+        .severity-low { background: #dbeafe; color: #1e40af; }
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
     </style>
 </head>
-<body class="text-gray-100">
+<body class="bg-gray-950 text-gray-200 font-sans antialiased">
 
-    <!-- Matrix Canvas Background -->
-    <canvas id="matrix-canvas"></canvas>
-
-    <!-- Header with glitch effect -->
-    <header class="relative z-10 border-b border-green-800 bg-black bg-opacity-70 backdrop-blur-sm">
+    <!-- شريط التنويـة العلوي -->
+    <nav class="gradient-bg border-b border-gray-800 shadow-2xl">
         <div class="container mx-auto px-6 py-4 flex justify-between items-center">
-            <div class="text-2xl font-bold glow flex items-center">
-                <i class="fas fa-shield-hover ml-3 text-green-400"></i>
-                <span class="gradient-text">Matrix Analyzer</span>
+            <div class="text-2xl font-bold flex items-center">
+                <i class="fas fa-shield-hover ml-3 text-blue-400"></i>
+                <span class="text-white">Secure<span class="text-blue-400">Analyzer</span> Pro</span>
             </div>
-            <div>
-                <span class="text-sm border border-green-500 px-3 py-1 rounded-full text-green-300">v.3.0</span>
+            <div class="flex items-center space-x-2 space-x-reverse">
+                <span class="bg-gray-800 text-blue-300 rounded-full px-3 py-1 text-sm border border-blue-500">v2.5</span>
+                <button id="exportBtn" class="bg-gray-800 hover:bg-gray-700 text-gray-300 px-4 py-2 rounded-lg transition flex items-center" disabled>
+                    <i class="fas fa-download ml-2"></i> تصدير التقرير
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- رأس الصفحة مع نموذج الإدخال -->
+    <header class="gradient-bg py-16 border-b border-gray-800">
+        <div class="container mx-auto px-6 text-center">
+            <h1 class="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">تحليل أمان متقدم</h1>
+            <p class="text-xl mb-8 text-gray-400">أدخل رابط الموقع للحصول على تقرير تقني مفصل مع عرض الكود المصدري وتحليل الثغرات</p>
+            <div class="max-w-3xl mx-auto bg-gray-900 rounded-xl shadow-2xl p-2 flex flex-col md:flex-row border border-gray-700">
+                <input type="url" id="urlInput" placeholder="https://example.com" 
+                       class="flex-1 px-4 py-3 bg-gray-800 text-gray-200 rounded-md md:rounded-r-md md:rounded-l-none focus:outline-none focus:ring-2 focus:ring-blue-500 border-0 rtl:text-right" 
+                       value="https://englishlive.ef.com">
+                <button id="analyzeBtn" class="mt-2 md:mt-0 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-8 rounded-md md:rounded-l-md md:rounded-r-none transition duration-300 flex items-center justify-center">
+                    <i class="fas fa-search ml-2"></i>
+                    <span>ابدأ التحليل</span>
+                </button>
+            </div>
+            <div class="mt-6 text-sm text-gray-500 flex flex-wrap justify-center gap-4">
+                <span><i class="fas fa-check-circle text-green-500 ml-1"></i> تحليل التقنيات</span>
+                <span><i class="fas fa-check-circle text-green-500 ml-1"></i> فحص الثغرات</span>
+                <span><i class="fas fa-check-circle text-green-500 ml-1"></i> عرض الكود المصدري</span>
+                <span><i class="fas fa-check-circle text-green-500 ml-1"></i> توصيات أمنية</span>
             </div>
         </div>
     </header>
 
-    <!-- Hero Section -->
-    <section class="relative z-10 py-12">
-        <div class="container mx-auto px-6 text-center">
-            <h1 class="text-5xl md:text-6xl font-bold mb-4 glow">تحليل أمان المواقع</h1>
-            <p class="text-xl text-green-300 mb-8">اكتشف الثغرات والتقنيات والبيانات المخفية</p>
-            <div class="max-w-3xl mx-auto hacker-box p-1 flex flex-col md:flex-row">
-                <input type="url" id="urlInput" placeholder="https://target.com" 
-                       class="flex-1 bg-black bg-opacity-70 border-0 px-4 py-3 text-green-300 placeholder-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 rounded-md md:rounded-r-md md:rounded-l-none text-left" dir="ltr"
-                       value="https://englishlive.ef.com">
-                <button id="analyzeBtn" class="mt-2 md:mt-0 bg-green-900 hover:bg-green-800 text-green-100 font-semibold py-3 px-8 rounded-md md:rounded-l-md md:rounded-r-none transition duration-300 flex items-center justify-center border border-green-500">
-                    <i class="fas fa-skull ml-2"></i>
-                    <span>اختراق أخلاقي</span>
-                </button>
-            </div>
-        </div>
-    </section>
-
-    <!-- Results Area -->
-    <main class="container mx-auto px-6 py-8 relative z-10" id="resultsArea" style="display: none;">
-        <!-- Loading Overlay -->
-        <div id="loadingIndicator" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 hidden">
-            <div class="text-center">
-                <div class="loader-matrix mx-auto mb-4"></div>
-                <p class="text-green-400 glow">جاري تحليل النظام... قد يستغرق ذلك بعض الوقت</p>
+    <!-- منطقة عرض النتائج -->
+    <main class="container mx-auto px-6 py-8" id="resultsArea" style="display: none;">
+        <!-- مؤشر التحميل -->
+        <div id="loadingIndicator" class="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50" style="display: none;">
+            <div class="bg-gray-900 rounded-xl p-8 shadow-2xl border border-gray-700 flex flex-col items-center">
+                <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-700 h-20 w-20 mb-6 border-t-blue-500"></div>
+                <p class="text-xl font-semibold text-gray-300">جاري التحليل العميق...</p>
+                <p class="text-sm text-gray-500 mt-2" id="loadingStatus">جلب بيانات الموقع</p>
             </div>
         </div>
 
-        <!-- Results Content -->
-        <div id="resultsContent" class="fade-in"></div>
+        <!-- النتائج -->
+        <div id="resultsContent">
+            <!-- سيتم تعبئتها بواسطة JavaScript -->
+        </div>
     </main>
 
-    <!-- Footer -->
-    <footer class="relative z-10 border-t border-green-800 bg-black bg-opacity-70 py-6 mt-12">
-        <div class="container mx-auto px-6 text-center text-green-600 text-sm">
-            <p>لأغراض تعليمية وتحسين الأمان. استخدم المسؤولية.</p>
+    <!-- التذييل -->
+    <footer class="bg-gray-900 border-t border-gray-800 py-8 mt-12">
+        <div class="container mx-auto px-6 text-center">
+            <p class="text-lg font-semibold mb-2 text-gray-300"> <span class="text-blue-400">SecureAnalyzer Pro</span> - الإصدار 2.5</p>
+            <p class="text-sm text-gray-500 mb-4">أداة تحليل أمان متقدمة لأغراض تعليمية وتحسين المواقع. استخدم بمسؤولية.</p>
+            <div class="flex justify-center space-x-4 space-x-reverse">
+                <a href="#" class="text-gray-500 hover:text-blue-400 transition"><i class="fab fa-github fa-2x"></i></a>
+                <a href="#" class="text-gray-500 hover:text-blue-400 transition"><i class="fab fa-twitter fa-2x"></i></a>
+            </div>
         </div>
     </footer>
 
     <script>
         (function() {
-            // -------------------- MATRIX RAIN BACKGROUND --------------------
-            const canvas = document.getElementById('matrix-canvas');
-            const ctx = canvas.getContext('2d');
-
-            function resizeCanvas() {
-                canvas.width = window.innerWidth;
-                canvas.height = window.innerHeight;
-            }
-            resizeCanvas();
-            window.addEventListener('resize', resizeCanvas);
-
-            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+{}[];:<>?/\\|`~";
-            const fontSize = 16;
-            const columns = canvas.width / fontSize;
-            const drops = [];
-            for (let i = 0; i < columns; i++) {
-                drops[i] = Math.floor(Math.random() * canvas.height);
-            }
-
-            function drawMatrix() {
-                ctx.fillStyle = 'rgba(0, 0, 0, 0.04)';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                ctx.fillStyle = '#0f0';
-                ctx.font = fontSize + 'px monospace';
-
-                for (let i = 0; i < drops.length; i++) {
-                    const text = chars[Math.floor(Math.random() * chars.length)];
-                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-
-                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-                        drops[i] = 0;
-                    }
-                    drops[i]++;
-                }
-            }
-            setInterval(drawMatrix, 40);
-
-            // -------------------- CORE FUNCTIONS --------------------
+            // عناصر DOM
             const urlInput = document.getElementById('urlInput');
             const analyzeBtn = document.getElementById('analyzeBtn');
             const resultsArea = document.getElementById('resultsArea');
             const loadingIndicator = document.getElementById('loadingIndicator');
+            const loadingStatus = document.getElementById('loadingStatus');
             const resultsContent = document.getElementById('resultsContent');
+            const exportBtn = document.getElementById('exportBtn');
 
+            // متغير لتخزين آخر نتائج للتصدير
+            let lastResultData = null;
+
+            // دالة تحديث حالة التحميل
+            function setLoadingStatus(status) {
+                if (loadingStatus) loadingStatus.textContent = status;
+            }
+
+            // دالة مساعدة للحصول على الرابط مع البروتوكول
             function normalizeUrl(url) {
+                url = url.trim();
                 if (!url.startsWith('http://') && !url.startsWith('https://')) {
                     return 'https://' + url;
                 }
                 return url;
             }
 
+            // استخراج اسم النطاق من الرابط
             function extractDomain(url) {
                 try {
                     const parsed = new URL(url);
@@ -237,16 +166,237 @@
                 }
             }
 
-            // Proxy fetch
+            // --- خدمات التحليل ---
+
+            // 1. جلب محتوى الصفحة عبر proxy (لتجاوز CORS)
             async function fetchPageContent(url) {
+                setLoadingStatus('جلب محتوى الصفحة...');
                 const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`;
                 const response = await fetch(proxyUrl);
                 if (!response.ok) throw new Error(`فشل جلب الصفحة: ${response.status}`);
                 return await response.text();
             }
 
-            // Headers fetch via proxy HEAD
+            // 2. تحليل التقنيات من HTML (موسع)
+            function detectTechnologies(html, url) {
+                setLoadingStatus('تحليل التقنيات المستخدمة...');
+                const technologies = [];
+                const htmlLower = html.toLowerCase();
+                
+                // CMS
+                if (htmlLower.includes('wp-content') || htmlLower.includes('wordpress')) technologies.push({ name: 'WordPress', category: 'CMS', icon: 'fab fa-wordpress' });
+                if (htmlLower.includes('joomla') || htmlLower.includes('com_content')) technologies.push({ name: 'Joomla', category: 'CMS', icon: 'fas fa-cube' });
+                if (htmlLower.includes('drupal') || htmlLower.includes('drupal.js')) technologies.push({ name: 'Drupal', category: 'CMS', icon: 'fab fa-drupal' });
+                if (htmlLower.includes('squarespace')) technologies.push({ name: 'Squarespace', category: 'CMS', icon: 'fas fa-pencil-alt' });
+                if (htmlLower.includes('wix')) technologies.push({ name: 'Wix', category: 'CMS', icon: 'fas fa-w' });
+                
+                // JavaScript Frameworks
+                if (htmlLower.includes('react') || htmlLower.includes('react-dom')) technologies.push({ name: 'React', category: 'JavaScript Framework', icon: 'fab fa-react' });
+                if (htmlLower.includes('vue')) technologies.push({ name: 'Vue.js', category: 'JavaScript Framework', icon: 'fab fa-vuejs' });
+                if (htmlLower.includes('angular')) technologies.push({ name: 'Angular', category: 'JavaScript Framework', icon: 'fab fa-angular' });
+                if (htmlLower.includes('jquery')) technologies.push({ name: 'jQuery', category: 'JavaScript Library', icon: 'fas fa-code' });
+                if (htmlLower.includes('next.js')) technologies.push({ name: 'Next.js', category: 'JavaScript Framework', icon: 'fas fa-server' });
+                if (htmlLower.includes('nuxt')) technologies.push({ name: 'Nuxt.js', category: 'JavaScript Framework', icon: 'fas fa-server' });
+                
+                // CSS Frameworks
+                if (htmlLower.includes('bootstrap')) technologies.push({ name: 'Bootstrap', category: 'CSS Framework', icon: 'fab fa-bootstrap' });
+                if (htmlLower.includes('tailwind')) technologies.push({ name: 'Tailwind CSS', category: 'CSS Framework', icon: 'fas fa-wind' });
+                if (htmlLower.includes('foundation')) technologies.push({ name: 'Foundation', category: 'CSS Framework', icon: 'fas fa-foundation' });
+                if (htmlLower.includes('bulma')) technologies.push({ name: 'Bulma', category: 'CSS Framework', icon: 'fas fa-b' });
+                
+                // Web Servers (clues)
+                if (htmlLower.includes('nginx')) technologies.push({ name: 'Nginx', category: 'Web Server', icon: 'fas fa-server' });
+                if (htmlLower.includes('apache')) technologies.push({ name: 'Apache', category: 'Web Server', icon: 'fas fa-server' });
+                if (htmlLower.includes('cloudflare')) technologies.push({ name: 'Cloudflare', category: 'CDN', icon: 'fas fa-cloud' });
+                
+                // Programming Languages (from URL or meta)
+                if (url.includes('.php') || htmlLower.includes('.php')) technologies.push({ name: 'PHP', category: 'Programming Language', icon: 'fab fa-php' });
+                if (htmlLower.includes('asp.net') || url.includes('.aspx')) technologies.push({ name: 'ASP.NET', category: 'Programming Language', icon: 'fab fa-microsoft' });
+                if (htmlLower.includes('python') || htmlLower.includes('django')) technologies.push({ name: 'Python/Django', category: 'Programming Language', icon: 'fab fa-python' });
+                if (htmlLower.includes('ruby') || htmlLower.includes('rails')) technologies.push({ name: 'Ruby/Rails', category: 'Programming Language', icon: 'fas fa-gem' });
+                if (htmlLower.includes('java') && htmlLower.includes('jsp')) technologies.push({ name: 'Java/JSP', category: 'Programming Language', icon: 'fab fa-java' });
+                
+                // Security headers presence (clues)
+                if (htmlLower.includes('csrf-token') || htmlLower.includes('_token')) technologies.push({ name: 'CSRF Protection', category: 'Security', icon: 'fas fa-shield' });
+                if (htmlLower.includes('content-security-policy')) technologies.push({ name: 'CSP', category: 'Security', icon: 'fas fa-lock' });
+                
+                // Analytics
+                if (htmlLower.includes('google-analytics') || htmlLower.includes('gtag')) technologies.push({ name: 'Google Analytics', category: 'Analytics', icon: 'fas fa-chart-line' });
+                if (htmlLower.includes('facebook-pixel')) technologies.push({ name: 'Facebook Pixel', category: 'Analytics', icon: 'fab fa-facebook' });
+                if (htmlLower.includes('hotjar')) technologies.push({ name: 'Hotjar', category: 'Analytics', icon: 'fas fa-fire' });
+                
+                // Remove duplicates (by name)
+                return technologies.filter((tech, index, self) => index === self.findIndex(t => t.name === tech.name));
+            }
+
+            // 3. فحص الثغرات (موسع)
+            function detectVulnerabilities(html, url, headers) {
+                setLoadingStatus('فحص الثغرات الأمنية...');
+                const vulnerabilities = [];
+                const htmlLower = html.toLowerCase();
+
+                // CSRF في النماذج
+                const formMatches = html.match(/<form.*?>.*?<\/form>/gis) || [];
+                formMatches.forEach((form, index) => {
+                    if (!form.includes('csrf') && !form.includes('_token') && !form.includes('authenticity_token')) {
+                        vulnerabilities.push({
+                            type: 'نقص حماية CSRF',
+                            severity: 'high',
+                            description: `النموذج رقم ${index+1} لا يحتوي على رمز CSRF، مما يجعله عرضة لهجمات التزوير.`,
+                            recommendation: 'أضف رمز CSRF فريد لكل نموذج وتحقق منه على الخادم.'
+                        });
+                    }
+                });
+
+                // حقن SQL محتمل من URL
+                if (url.includes('?') && (url.includes('=') && (url.includes('id=') || url.includes('page=') || url.includes('cat=')))) {
+                    vulnerabilities.push({
+                        type: 'SQL Injection محتمل',
+                        severity: 'high',
+                        description: 'الرابط يحتوي على معلمات (parameters) قد تكون عرضة للحقن إذا لم يتم تعقيمها.',
+                        recommendation: 'استخدم استعلامات معدة مسبقاً (Prepared Statements) وتعقيم المدخلات.'
+                    });
+                }
+
+                // XSS محتمل من وجود innerHTML أو document.write
+                if (htmlLower.includes('innerhtml') || htmlLower.includes('document.write')) {
+                    vulnerabilities.push({
+                        type: 'XSS محتمل',
+                        severity: 'medium',
+                        description: 'استخدام innerHTML أو document.write قد يؤدي إلى ثغرات XSS إذا تم إدخال محتوى غير آمن.',
+                        recommendation: 'استخدم textContent أو أساليب آمنة لتعقيم المدخلات.'
+                    });
+                }
+
+                // رؤوس أمنية مفقودة (إذا توفرت headers)
+                if (headers) {
+                    if (!headers['content-security-policy']) {
+                        vulnerabilities.push({
+                            type: 'نقص CSP',
+                            severity: 'medium',
+                            description: 'رأس Content-Security-Policy مفقود، مما يزيد خطر هجمات XSS.',
+                            recommendation: 'أضف رأس CSP مناسب.'
+                        });
+                    }
+                    if (!headers['x-frame-options']) {
+                        vulnerabilities.push({
+                            type: 'نقص X-Frame-Options',
+                            severity: 'medium',
+                            description: 'الموقع قد يكون عرضة للهجمات clickjacking.',
+                            recommendation: 'أضف رأس X-Frame-Options: DENY أو SAMEORIGIN.'
+                        });
+                    }
+                    if (!headers['strict-transport-security']) {
+                        vulnerabilities.push({
+                            type: 'نقص HSTS',
+                            severity: 'medium',
+                            description: 'رأس Strict-Transport-Security مفقود، يفضل تفعيل HSTS لمنع هجمات SSL Strip.',
+                            recommendation: 'أضف رأس Strict-Transport-Security مع max-age كبير.'
+                        });
+                    }
+                    if (!headers['x-content-type-options']) {
+                        vulnerabilities.push({
+                            type: 'نقص X-Content-Type-Options',
+                            severity: 'low',
+                            description: 'الرأس مفقود، مما قد يسمح بـ MIME sniffing.',
+                            recommendation: 'أضف X-Content-Type-Options: nosniff.'
+                        });
+                    }
+                    if (!headers['referrer-policy']) {
+                        vulnerabilities.push({
+                            type: 'نقص Referrer-Policy',
+                            severity: 'low',
+                            description: 'الرأس مفقود، مما قد يؤدي لتسريب معلومات.',
+                            recommendation: 'أضف Referrer-Policy: strict-origin-when-cross-origin.'
+                        });
+                    }
+                }
+
+                // ملفات حساسة محتملة (من مسارات)
+                const sensitivePaths = ['/wp-admin', '/admin', '/backup', '/.git', '/.env', '/config'];
+                sensitivePaths.forEach(path => {
+                    if (html.includes(path)) {
+                        vulnerabilities.push({
+                            type: 'مسار حساس مكشوف',
+                            severity: 'high',
+                            description: `تم العثور على إشارة إلى مسار حساس: ${path}.`,
+                            recommendation: 'تأكد من حماية هذه المسارات بكلمات مرور قوية أو إزالتها.'
+                        });
+                    }
+                });
+
+                return vulnerabilities;
+            }
+
+            // 4. كشف البيانات الحساسة
+            function detectSensitiveData(html) {
+                setLoadingStatus('البحث عن بيانات حساسة...');
+                const sensitive = [];
+
+                // بريد إلكتروني
+                const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+                const emails = html.match(emailRegex);
+                if (emails) {
+                    const uniqueEmails = [...new Set(emails)].slice(0, 5);
+                    sensitive.push({ type: 'عناوين بريد إلكتروني', data: uniqueEmails.join('، ') + (emails.length > 5 ? '...' : '') });
+                }
+
+                // مفاتيح API
+                const apiKeyRegex = /(api[_-]?key|apikey|secret|token)["']?\s*[:=]\s*["']([a-zA-Z0-9_\-]{16,})["']/gi;
+                const apiKeys = html.match(apiKeyRegex);
+                if (apiKeys) {
+                    sensitive.push({ type: 'مفاتيح API محتملة', data: `تم العثور على ${apiKeys.length} مفتاح.` });
+                }
+
+                // أرقام هواتف
+                const phoneRegex = /(\+?\d{1,3}[-.\s]?)?(\(?\d{2,4}\)?[-.\s]?)?\d{3,4}[-.\s]?\d{3,4}/g;
+                const phones = html.match(phoneRegex);
+                if (phones) {
+                    sensitive.push({ type: 'أرقام هواتف', data: phones.slice(0, 3).join('، ') + (phones.length > 3 ? '...' : '') });
+                }
+
+                // IPv4 addresses
+                const ipRegex = /\b(?:[0-9]{1,3}\.){3}[0-9]{1,3}\b/g;
+                const ips = html.match(ipRegex);
+                if (ips) {
+                    sensitive.push({ type: 'عناوين IP', data: ips.slice(0, 3).join('، ') + (ips.length > 3 ? '...' : '') });
+                }
+
+                return sensitive;
+            }
+
+            // 5. فحص SSL/TLS باستخدام SSL Labs API
+            async function checkSSL(host) {
+                setLoadingStatus('فحص شهادة SSL/TLS...');
+                try {
+                    const apiUrl = `https://api.ssllabs.com/api/v3/analyze?host=${encodeURIComponent(host)}&fromCache=on&all=done`;
+                    const response = await fetch(apiUrl);
+                    if (!response.ok) throw new Error('فشل الاتصال بـ SSL Labs');
+                    const data = await response.json();
+                    
+                    if (data.status === 'READY' && data.endpoints && data.endpoints.length > 0) {
+                        const endpoint = data.endpoints[0];
+                        const grade = endpoint.grade || '?';
+                        let details = '';
+                        if (endpoint.details) {
+                            const protocols = endpoint.details.protocols ? endpoint.details.protocols.map(p => p.name).join(', ') : 'غير معروف';
+                            details = `البروتوكولات: ${protocols}`;
+                        }
+                        return { grade, details, raw: data };
+                    } else if (data.status === 'ERROR') {
+                        return { grade: '?', details: 'خطأ في الفحص', error: data.statusMessage };
+                    } else {
+                        return { grade: '?', details: 'التحليل لم يكتمل بعد، حاول مجدداً لاحقاً' };
+                    }
+                } catch (e) {
+                    console.error('SSL check error:', e);
+                    return { grade: '?', details: 'تعذر فحص SSL', error: e.message };
+                }
+            }
+
+            // 6. الحصول على الرؤوس الأمنية عبر proxy (HEAD)
             async function fetchHeaders(url) {
+                setLoadingStatus('جلب الرؤوس الأمنية...');
                 try {
                     const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}&method=HEAD`;
                     const response = await fetch(proxyUrl, { method: 'HEAD' });
@@ -261,312 +411,357 @@
                 }
             }
 
-            // SSL Labs check
-            async function checkSSL(host) {
-                try {
-                    const apiUrl = `https://api.ssllabs.com/api/v3/analyze?host=${encodeURIComponent(host)}&fromCache=on&all=done`;
-                    const response = await fetch(apiUrl);
-                    if (!response.ok) throw new Error('فشل الاتصال بـ SSL Labs');
-                    const data = await response.json();
-                    if (data.status === 'READY' && data.endpoints && data.endpoints.length) {
-                        const endpoint = data.endpoints[0];
-                        const grade = endpoint.grade || '?';
-                        return { grade, details: `البروتوكولات: ${endpoint.details?.protocols?.map(p => p.name).join(', ') || 'غير معروف'}` };
-                    } else {
-                        return { grade: '?', details: 'التحليل لم يكتمل بعد' };
-                    }
-                } catch (e) {
-                    console.error('SSL error:', e);
-                    return { grade: '?', details: 'تعذر الفحص' };
-                }
-            }
-
-            // Detect technologies (enhanced)
-            function detectTechnologies(html, url) {
-                const techs = [];
-                if (html.includes('wp-content') || html.includes('wordpress')) techs.push({ name: 'WordPress', category: 'CMS', icon: 'fab fa-wordpress' });
-                if (html.includes('Joomla') || html.includes('com_content')) techs.push({ name: 'Joomla', category: 'CMS', icon: 'fas fa-cube' });
-                if (html.includes('Drupal') || html.includes('drupal.js')) techs.push({ name: 'Drupal', category: 'CMS', icon: 'fab fa-drupal' });
-                if (html.includes('react.js') || html.includes('react.min')) techs.push({ name: 'React', category: 'JavaScript', icon: 'fab fa-react' });
-                if (html.includes('vue.js') || html.includes('vue.min')) techs.push({ name: 'Vue.js', category: 'JavaScript', icon: 'fab fa-vuejs' });
-                if (html.includes('angular.js') || html.includes('angular.min')) techs.push({ name: 'AngularJS', category: 'JavaScript', icon: 'fab fa-angular' });
-                if (html.includes('jquery')) techs.push({ name: 'jQuery', category: 'JavaScript', icon: 'fas fa-code' });
-                if (html.includes('bootstrap.css') || html.includes('bootstrap.min')) techs.push({ name: 'Bootstrap', category: 'CSS', icon: 'fab fa-bootstrap' });
-                if (html.includes('tailwind')) techs.push({ name: 'Tailwind', category: 'CSS', icon: 'fas fa-wind' });
-                if (html.includes('nginx')) techs.push({ name: 'Nginx', category: 'Server', icon: 'fas fa-server' });
-                if (html.includes('apache')) techs.push({ name: 'Apache', category: 'Server', icon: 'fas fa-server' });
-                if (url.includes('.php') || html.includes('.php')) techs.push({ name: 'PHP', category: 'Language', icon: 'fab fa-php' });
-                if (html.includes('csrf-token') || html.includes('_token')) techs.push({ name: 'CSRF Protection', category: 'Security', icon: 'fas fa-shield' });
-                if (html.includes('google-analytics') || html.includes('gtag')) techs.push({ name: 'Google Analytics', category: 'Analytics', icon: 'fab fa-google' });
-                return techs;
-            }
-
-            // Extract sample code snippets with security issues
-            function extractCodeSnippets(html, vulnerabilities) {
-                // Return an array of objects { title, code, lines }
-                const snippets = [];
-                // Search for forms with missing CSRF
-                const formRegex = /<form[\s\S]*?<\/form>/gi;
-                let match;
-                while ((match = formRegex.exec(html)) !== null) {
-                    if (!match[0].includes('csrf') && !match[0].includes('_token')) {
-                        snippets.push({
-                            title: 'نموذج بدون CSRF',
-                            code: match[0].substring(0, 300) + (match[0].length > 300 ? '...' : ''),
-                            highlight: true
-                        });
-                        break; // just one example
-                    }
-                }
-                // Find script tags with inline code
-                const scriptRegex = /<script[\s\S]*?<\/script>/gi;
-                if ((match = scriptRegex.exec(html)) !== null) {
-                    snippets.push({
-                        title: 'مثال كود JavaScript',
-                        code: match[0].substring(0, 300) + (match[0].length > 300 ? '...' : ''),
-                        highlight: false
-                    });
-                }
-                // Find possible API keys in text
-                const apiKeyRegex = /(api[_-]?key|apikey|secret|token)["']?\s*[:=]\s*["'][a-zA-Z0-9_\-]{16,}["']/gi;
-                if ((match = apiKeyRegex.exec(html)) !== null) {
-                    snippets.push({
-                        title: 'مفتاح API مكشوف',
-                        code: match[0],
-                        highlight: true
-                    });
-                }
-                return snippets;
-            }
-
-            // Detect vulnerabilities (enhanced)
-            function detectVulnerabilities(html, url, headers) {
-                const vulns = [];
-                // CSRF missing
-                const formMatches = html.match(/<form.*?>.*?<\/form>/gis);
-                if (formMatches) {
-                    formMatches.forEach((form, idx) => {
-                        if (!form.includes('csrf') && !form.includes('_token') && !form.includes('authenticity_token')) {
-                            vulns.push({
-                                type: 'نقص CSRF',
-                                severity: 'high',
-                                description: 'نموذج رقم ' + (idx+1) + ' لا يحتوي على رمز حماية CSRF.',
-                                recommendation: 'أضف رمز CSRF وتحقق منه.'
-                            });
-                        }
-                    });
-                }
-                // SQL injection indicators
-                if (url.includes('?') && url.includes('=') && (url.includes('id=') || url.includes('page='))) {
-                    vulns.push({
-                        type: 'حقن SQL محتمل',
-                        severity: 'high',
-                        description: 'الرابط يحتوي على معاملات (parameters) قد تكون عرضة للحقن.',
-                        recommendation: 'استخدم استعلامات معدة مسبقاً وتعقيم المدخلات.'
-                    });
-                }
-                // Missing security headers
-                if (headers) {
-                    if (!headers['content-security-policy']) vulns.push({ type: 'نقص CSP', severity: 'medium', description: 'رأس CSP مفقود.', recommendation: 'أضف CSP.' });
-                    if (!headers['x-frame-options']) vulns.push({ type: 'نقص X-Frame-Options', severity: 'medium', description: 'الموقع قد يكون عرضة لل clickjacking.', recommendation: 'أضف X-Frame-Options.' });
-                    if (!headers['strict-transport-security']) vulns.push({ type: 'نقص HSTS', severity: 'low', description: 'رأس HSTS مفقود.', recommendation: 'أضف HSTS.' });
-                }
-                // XSS basic check
-                if (html.includes('<script>') && html.includes('document.write')) {
-                    vulns.push({ type: 'XSS محتمل', severity: 'high', description: 'يوجد كود script قد يكون عرضة للحقن.', recommendation: 'استخدم CSP وتعقيم المدخلات.' });
-                }
-                // Open redirect
-                const redirectParams = ['redirect', 'return', 'next', 'url'];
-                if (url.includes('?') && redirectParams.some(p => url.includes(p + '='))) {
-                    vulns.push({ type: 'إعادة توجيه مفتوحة محتملة', severity: 'medium', description: 'وجود معامل redirect قد يسمح بتوجيه المستخدم لمواقع ضارة.', recommendation: 'تحقق من صحة الروابط.' });
-                }
-                return vulns;
-            }
-
-            // Detect sensitive data (enhanced)
-            function detectSensitiveData(html) {
-                const sensitive = [];
-                const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
-                const emails = html.match(emailRegex);
-                if (emails) sensitive.push({ type: 'عناوين بريد إلكتروني', data: [...new Set(emails)].slice(0,5).join('، ') });
-
-                const phoneRegex = /(\+?\d{1,3}[-.\s]?)?(\(?\d{2,4}\)?[-.\s]?)?\d{3,4}[-.\s]?\d{3,4}/g;
-                const phones = html.match(phoneRegex);
-                if (phones) sensitive.push({ type: 'أرقام هواتف', data: phones.slice(0,3).join('، ') });
-
-                const apiKeyRegex = /(api[_-]?key|apikey|secret|token)["']?\s*[:=]\s*["']([a-zA-Z0-9_\-]{16,})["']/gi;
-                const keys = html.match(apiKeyRegex);
-                if (keys) sensitive.push({ type: 'مفاتيح API محتملة', data: keys.length + ' مفتاح (معروض في الكود)' });
-
-                return sensitive;
-            }
-
-            // Calculate overall grade
+            // 7. حساب الدرجة الشاملة (A-F)
             function calculateOverallGrade(sslGrade, vulnerabilities, headers, sensitive) {
                 let score = 100;
+
+                // خصم SSL
                 if (sslGrade === 'A+' || sslGrade === 'A') score -= 0;
                 else if (sslGrade === 'B') score -= 10;
                 else if (sslGrade === 'C') score -= 20;
-                else if (['D','E','F'].includes(sslGrade)) score -= 40;
-                else score -= 15;
+                else if (sslGrade === 'D' || sslGrade === 'E' || sslGrade === 'F') score -= 40;
+                else score -= 15; // غير معروف
 
+                // خصم الثغرات
                 vulnerabilities.forEach(v => {
                     if (v.severity === 'high') score -= 15;
                     else if (v.severity === 'medium') score -= 8;
                     else if (v.severity === 'low') score -= 3;
                 });
 
+                // خصم البيانات الحساسة
                 if (sensitive.length > 0) score -= 10;
 
-                if (score >= 90) return { grade: 'A', color: '#00ff00' };
-                if (score >= 75) return { grade: 'B', color: '#00cc00' };
-                if (score >= 60) return { grade: 'C', color: '#cccc00' };
-                if (score >= 40) return { grade: 'D', color: '#ff9900' };
-                return { grade: 'F', color: '#ff3300' };
+                // تحديد الدرجة
+                if (score >= 90) return { grade: 'A', color: 'green', text: 'ممتاز' };
+                if (score >= 75) return { grade: 'B', color: 'blue', text: 'جيد جداً' };
+                if (score >= 60) return { grade: 'C', color: 'yellow', text: 'متوسط' };
+                if (score >= 40) return { grade: 'D', color: 'orange', text: 'ضعيف' };
+                return { grade: 'F', color: 'red', text: 'غير آمن' };
             }
 
-            // Render results with detailed code panels
-            function renderResults(data) {
-                const snippets = extractCodeSnippets(data.html, data.vulnerabilities);
-                const overall = calculateOverallGrade(data.ssl.grade, data.vulnerabilities, data.headers, data.sensitiveData);
-
-                let techHtml = data.technologies.map(t => 
-                    `<li class="flex items-center"><i class="${t.icon} ml-2 text-green-400"></i> ${t.name} <span class="mr-auto text-xs text-green-600">${t.category}</span></li>`
-                ).join('');
-                if (!techHtml) techHtml = '<li class="text-green-700">لم يتم اكتشاف تقنيات محددة</li>';
-
-                let vulnHtml = data.vulnerabilities.map(v => `
-                    <div class="border border-green-800 bg-black bg-opacity-60 p-4 rounded mb-3">
-                        <div class="flex items-center justify-between">
-                            <span class="font-bold text-green-300">${v.type}</span>
-                            <span class="badge-sev severity-${v.severity}">${v.severity}</span>
-                        </div>
-                        <p class="mt-1 text-sm text-green-200">${v.description}</p>
-                        <p class="mt-1 text-xs text-green-500"><span class="font-bold">توصية:</span> ${v.recommendation}</p>
-                    </div>
-                `).join('') || '<p class="text-green-500">لم يتم العثور على ثغرات واضحة.</p>';
-
-                let sensitiveHtml = data.sensitiveData.map(s => 
-                    `<li class="border-b border-green-800 py-2"><span class="font-bold text-green-300">${s.type}:</span> <span class="text-green-400">${s.data}</span></li>`
-                ).join('') || '<p class="text-green-500">لا توجد بيانات حساسة ظاهرة.</p>';
-
-                let headersHtml = data.headers ? 
-                    Object.entries(data.headers).map(([k,v]) => 
-                        `<div class="flex text-sm"><span class="w-1/3 text-green-400">${k}:</span><span class="w-2/3 text-green-300 break-all">${v}</span></div>`
-                    ).join('') : '<p class="text-green-500">غير متوفرة</p>';
-
-                let snippetsHtml = snippets.map(s => `
-                    <div class="mb-4">
-                        <div class="flex items-center mb-1">
-                            <span class="text-sm text-green-400">${s.title}</span>
-                            ${s.highlight ? '<span class="mr-2 text-xs bg-red-900 text-red-200 px-2 py-0.5 rounded-full">خطورة محتملة</span>' : ''}
-                        </div>
-                        <pre class="code-panel p-3 text-xs rounded overflow-x-auto" dir="ltr"><code>${escapeHtml(s.code)}</code></pre>
-                    </div>
-                `).join('') || '<p class="text-green-500">لا توجد عينات كود متاحة.</p>';
-
-                function escapeHtml(unsafe) {
-                    return unsafe.replace(/[&<>"]/g, function(m) {
-                        if(m === '&') return '&amp;'; if(m === '<') return '&lt;'; if(m === '>') return '&gt;'; if(m === '"') return '&quot;';
-                        return m;
-                    });
-                }
-
-                const finalHtml = `
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
-                        <div class="hacker-box p-5 col-span-1">
-                            <div class="flex items-center mb-3"><i class="fas fa-shield text-2xl ml-2 text-green-400"></i><h2 class="text-xl glow">التقييم العام</h2></div>
-                            <div class="text-center">
-                                <div class="text-8xl font-bold" style="color: ${overall.color}">${overall.grade}</div>
-                                <p class="text-sm mt-2">درجة SSL: ${data.ssl.grade}</p>
-                            </div>
-                        </div>
-                        <div class="hacker-box p-5 col-span-2">
-                            <div class="flex items-center mb-3"><i class="fas fa-info-circle text-2xl ml-2 text-green-400"></i><h2 class="text-xl glow">ملخص الهدف</h2></div>
-                            <p class="text-green-300 break-all">${data.url}</p>
-                            <p class="text-green-500 text-sm">الخادم: ${data.headers?.['server'] || 'غير معروف'}</p>
-                            <p class="text-green-500 text-sm">تاريخ الفحص: ${new Date().toLocaleString('ar-EG')}</p>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                        <div class="hacker-box p-5">
-                            <div class="flex items-center mb-3"><i class="fas fa-microchip text-2xl ml-2 text-green-400"></i><h2 class="text-xl glow">التقنيات</h2></div>
-                            <ul class="space-y-1 text-sm">${techHtml}</ul>
-                        </div>
-                        <div class="hacker-box p-5">
-                            <div class="flex items-center mb-3"><i class="fas fa-lock text-2xl ml-2 text-green-400"></i><h2 class="text-xl glow">SSL/TLS</h2></div>
-                            <div class="text-5xl font-bold text-center ${data.ssl.grade === 'A' || data.ssl.grade === 'A+' ? 'text-green-400' : 'text-yellow-500'}">${data.ssl.grade}</div>
-                            <p class="text-sm mt-2 text-green-400">${data.ssl.details}</p>
-                        </div>
-                    </div>
-
-                    <div class="hacker-box p-5 mb-6">
-                        <div class="flex items-center mb-3"><i class="fas fa-bug text-2xl ml-2 text-red-400"></i><h2 class="text-xl glow">الثغرات الأمنية</h2></div>
-                        ${vulnHtml}
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-                        <div class="hacker-box p-5">
-                            <div class="flex items-center mb-3"><i class="fas fa-database text-2xl ml-2 text-green-400"></i><h2 class="text-xl glow">البيانات الحساسة</h2></div>
-                            <ul class="space-y-1 text-sm">${sensitiveHtml}</ul>
-                        </div>
-                        <div class="hacker-box p-5">
-                            <div class="flex items-center mb-3"><i class="fas fa-headers text-2xl ml-2 text-green-400"></i><h2 class="text-xl glow">رؤوس HTTP</h2></div>
-                            <div class="space-y-1 max-h-60 overflow-y-auto text-xs">${headersHtml}</div>
-                        </div>
-                    </div>
-
-                    <div class="hacker-box p-5 mb-6">
-                        <div class="flex items-center mb-3"><i class="fas fa-code text-2xl ml-2 text-green-400"></i><h2 class="text-xl glow">عينات الكود المصدري</h2></div>
-                        ${snippetsHtml}
-                    </div>
-                `;
-
-                resultsContent.innerHTML = finalHtml;
-            }
-
-            // Main analysis function
+            // دالة تحليل الموقع الرئيسية
             async function analyzeSite(url) {
                 const domain = extractDomain(url);
+                
+                // جلب محتوى الصفحة
                 const html = await fetchPageContent(url);
+                
+                // جلب الرؤوس
                 const headers = await fetchHeaders(url);
+                
+                // تحليل التقنيات
                 const technologies = detectTechnologies(html, url);
+                
+                // فحص الثغرات
                 const vulnerabilities = detectVulnerabilities(html, url, headers);
+                
+                // كشف البيانات الحساسة
                 const sensitiveData = detectSensitiveData(html);
-                const ssl = await checkSSL(domain);
+                
+                // فحص SSL
+                const sslResult = await checkSSL(domain);
+                
+                // الدرجة النهائية
+                const overall = calculateOverallGrade(sslResult.grade, vulnerabilities, headers, sensitiveData);
+                
                 return {
-                    url, domain, html,
-                    technologies, vulnerabilities, sensitiveData,
-                    ssl, headers
+                    url,
+                    domain,
+                    html: html.substring(0, 5000), // حد أقصى 5000 حرف للعرض
+                    technologies,
+                    vulnerabilities,
+                    sensitiveData,
+                    ssl: sslResult,
+                    overall,
+                    headers
                 };
             }
 
-            // Event listener
+            // دالة عرض النتائج
+            function renderResults(data) {
+                lastResultData = data; // حفظ للتصدير
+                exportBtn.disabled = false;
+
+                // تحضير بيانات الرسم البياني (بسيط)
+                const techCategories = {};
+                data.technologies.forEach(t => {
+                    techCategories[t.category] = (techCategories[t.category] || 0) + 1;
+                });
+
+                // إنشاء معرف فريد للرسم البياني
+                const chartId = 'techChart' + Date.now();
+
+                let html = `
+                    <!-- ملخص التقييم -->
+                    <div class="bg-gray-900 rounded-xl shadow-2xl p-6 mb-8 card-hover border border-gray-800">
+                        <div class="flex flex-col md:flex-row items-center justify-between">
+                            <div>
+                                <h2 class="text-2xl font-bold text-white mb-2">تقرير أمان <span class="text-blue-400">${data.domain}</span></h2>
+                                <p class="text-gray-400">تم التحليل في ${new Date().toLocaleString('ar-EG')}</p>
+                            </div>
+                            <div class="mt-4 md:mt-0 flex items-center">
+                                <div class="text-center ml-6">
+                                    <div class="text-6xl font-bold" style="color: ${data.overall.color === 'red' ? '#ef4444' : data.overall.color === 'orange' ? '#f97316' : data.overall.color === 'yellow' ? '#eab308' : data.overall.color === 'green' ? '#22c55e' : '#3b82f6'}">
+                                        ${data.overall.grade}
+                                    </div>
+                                    <div class="text-sm text-gray-400">التقييم العام (${data.overall.text})</div>
+                                </div>
+                                <div class="border-r-2 border-gray-700 h-12 mx-4 hidden md:block"></div>
+                                <div class="text-center">
+                                    <div class="text-4xl font-bold ${data.ssl.grade === 'A' || data.ssl.grade === 'A+' ? 'text-green-500' : 'text-yellow-500'}">${data.ssl.grade}</div>
+                                    <div class="text-sm text-gray-400">درجة SSL</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- علامات التبويب -->
+                    <div class="bg-gray-900 rounded-xl shadow-2xl border border-gray-800 overflow-hidden">
+                        <div class="flex border-b border-gray-800 overflow-x-auto">
+                            <button class="tab-button active px-6 py-3 text-sm font-medium bg-blue-600 text-white" data-tab="overview">نظرة عامة</button>
+                            <button class="tab-button px-6 py-3 text-sm font-medium text-gray-400 hover:text-white transition" data-tab="technologies">التقنيات</button>
+                            <button class="tab-button px-6 py-3 text-sm font-medium text-gray-400 hover:text-white transition" data-tab="vulnerabilities">الثغرات</button>
+                            <button class="tab-button px-6 py-3 text-sm font-medium text-gray-400 hover:text-white transition" data-tab="headers">الرؤوس الأمنية</button>
+                            <button class="tab-button px-6 py-3 text-sm font-medium text-gray-400 hover:text-white transition" data-tab="source">الكود المصدري</button>
+                            <button class="tab-button px-6 py-3 text-sm font-medium text-gray-400 hover:text-white transition" data-tab="ssl">SSL/TLS</button>
+                        </div>
+
+                        <!-- محتوى علامات التبويب -->
+                        <div class="p-6">
+                            <!-- نظرة عامة -->
+                            <div id="tab-overview" class="tab-content">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div class="bg-gray-800 rounded-lg p-4">
+                                        <h3 class="text-lg font-semibold mb-3 flex items-center"><i class="fas fa-cubes ml-2 text-blue-400"></i> ملخص التقنيات</h3>
+                                        <p>تم اكتشاف <span class="text-blue-400 font-bold">${data.technologies.length}</span> تقنية مختلفة.</p>
+                                        <canvas id="${chartId}" class="mt-4" style="max-height:200px"></canvas>
+                                    </div>
+                                    <div class="bg-gray-800 rounded-lg p-4">
+                                        <h3 class="text-lg font-semibold mb-3 flex items-center"><i class="fas fa-shield ml-2 text-green-400"></i> ملخص الثغرات</h3>
+                                        <p>عدد الثغرات: <span class="text-red-400 font-bold">${data.vulnerabilities.length}</span></p>
+                                        <p class="mt-2">عالية: ${data.vulnerabilities.filter(v => v.severity === 'high').length}</p>
+                                        <p>متوسطة: ${data.vulnerabilities.filter(v => v.severity === 'medium').length}</p>
+                                        <p>منخفضة: ${data.vulnerabilities.filter(v => v.severity === 'low').length}</p>
+                                    </div>
+                                    <div class="bg-gray-800 rounded-lg p-4">
+                                        <h3 class="text-lg font-semibold mb-3 flex items-center"><i class="fas fa-database ml-2 text-yellow-400"></i> بيانات حساسة</h3>
+                                        <p>عدد العناصر: ${data.sensitiveData.length}</p>
+                                    </div>
+                                    <div class="bg-gray-800 rounded-lg p-4">
+                                        <h3 class="text-lg font-semibold mb-3 flex items-center"><i class="fas fa-lock ml-2 text-purple-400"></i> SSL/TLS</h3>
+                                        <p>الدرجة: <span class="font-bold ${data.ssl.grade === 'A' || data.ssl.grade === 'A+' ? 'text-green-500' : 'text-yellow-500'}">${data.ssl.grade}</span></p>
+                                        <p class="text-sm text-gray-400 mt-2">${data.ssl.details || ''}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- التقنيات -->
+                            <div id="tab-technologies" class="tab-content hidden">
+                                <h3 class="text-xl font-semibold mb-4">التقنيات المكتشفة</h3>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                    ${data.technologies.map(tech => `
+                                        <div class="bg-gray-800 rounded-lg p-4 flex items-center">
+                                            <i class="${tech.icon || 'fas fa-puzzle-piece'} text-2xl text-blue-400 ml-3"></i>
+                                            <div>
+                                                <div class="font-semibold">${tech.name}</div>
+                                                <div class="text-sm text-gray-400">${tech.category}</div>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+
+                            <!-- الثغرات -->
+                            <div id="tab-vulnerabilities" class="tab-content hidden">
+                                <h3 class="text-xl font-semibold mb-4">الثغرات الأمنية المكتشفة</h3>
+                                ${data.vulnerabilities.length > 0 ? `
+                                    <div class="space-y-4">
+                                        ${data.vulnerabilities.map(v => `
+                                            <div class="border-r-4 ${v.severity === 'high' ? 'border-red-500' : v.severity === 'medium' ? 'border-yellow-500' : 'border-blue-500'} bg-gray-800 p-4 rounded-lg">
+                                                <div class="flex items-center justify-between">
+                                                    <span class="font-bold text-lg">${v.type}</span>
+                                                    <span class="px-3 py-1 text-xs rounded-full ${v.severity === 'high' ? 'bg-red-900 text-red-200' : v.severity === 'medium' ? 'bg-yellow-900 text-yellow-200' : 'bg-blue-900 text-blue-200'}">${v.severity}</span>
+                                                </div>
+                                                <p class="mt-2 text-gray-300">${v.description}</p>
+                                                <p class="mt-2 text-sm text-blue-300"><span class="font-semibold">توصية:</span> ${v.recommendation}</p>
+                                            </div>
+                                        `).join('')}
+                                    </div>
+                                ` : '<p class="text-green-500">لم يتم العثور على ثغرات واضحة، ولكن يُنصح بإجراء فحص أعمق.</p>'}
+                            </div>
+
+                            <!-- الرؤوس الأمنية -->
+                            <div id="tab-headers" class="tab-content hidden">
+                                <h3 class="text-xl font-semibold mb-4">رؤوس HTTP الأمنية</h3>
+                                ${data.headers ? `
+                                    <div class="bg-gray-800 rounded-lg p-4">
+                                        <pre class="code-block">${Object.entries(data.headers).map(([k, v]) => `${k}: ${v}`).join('\n')}</pre>
+                                    </div>
+                                ` : '<p class="text-gray-400">لم نتمكن من جلب الرؤوس.</p>'}
+                            </div>
+
+                            <!-- الكود المصدري -->
+                            <div id="tab-source" class="tab-content hidden">
+                                <h3 class="text-xl font-semibold mb-4">الكود المصدري للموقع (أول 5000 حرف)</h3>
+                                <div class="bg-gray-800 rounded-lg p-4">
+                                    <pre class="code-block"><code>${escapeHtml(data.html)}</code></pre>
+                                </div>
+                                <p class="text-sm text-gray-400 mt-2">* يتم عرض أول 5000 حرف فقط.</p>
+                            </div>
+
+                            <!-- SSL/TLS -->
+                            <div id="tab-ssl" class="tab-content hidden">
+                                <h3 class="text-xl font-semibold mb-4">تفاصيل شهادة SSL/TLS</h3>
+                                <div class="bg-gray-800 rounded-lg p-4">
+                                    <p><span class="font-semibold">الدرجة:</span> <span class="text-2xl ${data.ssl.grade === 'A' || data.ssl.grade === 'A+' ? 'text-green-500' : 'text-yellow-500'}">${data.ssl.grade}</span></p>
+                                    <p class="mt-2"><span class="font-semibold">التفاصيل:</span> ${data.ssl.details || 'غير متوفرة'}</p>
+                                    ${data.ssl.raw ? `
+                                        <pre class="code-block mt-4">${escapeHtml(JSON.stringify(data.ssl.raw, null, 2))}</pre>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- قسم البيانات الحساسة -->
+                    <div class="bg-gray-900 rounded-xl shadow-2xl p-6 mt-6 border border-gray-800">
+                        <h3 class="text-xl font-semibold mb-4 flex items-center"><i class="fas fa-exclamation-triangle text-yellow-500 ml-2"></i> بيانات حساسة محتملة</h3>
+                        ${data.sensitiveData.length > 0 ? `
+                            <ul class="space-y-2">
+                                ${data.sensitiveData.map(item => `<li><span class="font-bold">${item.type}:</span> <span class="text-yellow-300">${item.data}</span></li>`).join('')}
+                            </ul>
+                            <p class="mt-3 text-sm text-red-400">إذا كانت هذه البيانات خاصة، فيجب إزالتها من الكود المصدري.</p>
+                        ` : '<p class="text-gray-400">لم يتم العثور على بيانات حساسة واضحة.</p>'}
+                    </div>
+
+                    <!-- توصيات عامة -->
+                    <div class="bg-gray-900 rounded-xl shadow-2xl p-6 mt-6 border border-gray-800">
+                        <h3 class="text-xl font-semibold mb-4 flex items-center"><i class="fas fa-clipboard-check text-green-500 ml-2"></i> توصيات عامة لتحسين الأمان</h3>
+                        <ul class="list-disc list-inside space-y-2 text-gray-300">
+                            ${generateRecommendations(data).map(rec => `<li>${rec}</li>`).join('')}
+                        </ul>
+                    </div>
+                `;
+
+                resultsContent.innerHTML = html;
+
+                // رسم بياني بسيط
+                setTimeout(() => {
+                    const ctx = document.getElementById(chartId)?.getContext('2d');
+                    if (ctx) {
+                        new Chart(ctx, {
+                            type: 'doughnut',
+                            data: {
+                                labels: Object.keys(techCategories),
+                                datasets: [{
+                                    data: Object.values(techCategories),
+                                    backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
+                                }]
+                            },
+                            options: {
+                                responsive: true,
+                                plugins: {
+                                    legend: { display: false }
+                                }
+                            }
+                        });
+                    }
+                }, 100);
+
+                // ربط علامات التبويب
+                document.querySelectorAll('.tab-button').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active', 'bg-blue-600', 'text-white'));
+                        btn.classList.add('active', 'bg-blue-600', 'text-white');
+                        
+                        const tabId = btn.dataset.tab;
+                        document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+                        document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+                    });
+                });
+            }
+
+            // دالة لتوليد توصيات عامة بناءً على النتائج
+            function generateRecommendations(data) {
+                const recs = [];
+                if (data.ssl.grade !== 'A' && data.ssl.grade !== 'A+') {
+                    recs.push('قم بترقية إعدادات SSL/TLS إلى الأحدث للحصول على درجة A+.');
+                }
+                if (data.vulnerabilities.some(v => v.severity === 'high')) {
+                    recs.push('عالج الثغرات عالية الخطورة فوراً.');
+                }
+                if (!data.headers || !data.headers['content-security-policy']) {
+                    recs.push('أضف سياسة أمان المحتوى (CSP) للحد من هجمات XSS.');
+                }
+                if (!data.headers || !data.headers['x-frame-options']) {
+                    recs.push('أضف رأس X-Frame-Options للحماية من clickjacking.');
+                }
+                if (data.sensitiveData.length > 0) {
+                    recs.push('قم بإزالة أي بيانات حساسة من الكود المصدري.');
+                }
+                if (recs.length === 0) {
+                    recs.push('لا توجد توصيات فورية، ولكن حافظ على تحديث موقعك.');
+                }
+                return recs;
+            }
+
+            // دالة هروب HTML للعرض الآمن
+            function escapeHtml(unsafe) {
+                return unsafe.replace(/[&<>"']/g, function(m) {
+                    if(m === '&') return '&amp;';
+                    if(m === '<') return '&lt;';
+                    if(m === '>') return '&gt;';
+                    if(m === '"') return '&quot;';
+                    return '&#039;';
+                });
+            }
+
+            // حدث النقر على زر التحليل
             analyzeBtn.addEventListener('click', async () => {
                 const rawUrl = urlInput.value.trim();
-                if (!rawUrl) return alert('أدخل رابط الموقع');
+                if (!rawUrl) {
+                    alert('الرجاء إدخال رابط الموقع');
+                    return;
+                }
+
                 const url = normalizeUrl(rawUrl);
-
+                
+                // إظهار مؤشر التحميل
                 resultsArea.style.display = 'block';
-                loadingIndicator.classList.remove('hidden');
+                loadingIndicator.style.display = 'flex';
                 resultsContent.innerHTML = '';
-
+                
                 try {
-                    const data = await analyzeSite(url);
-                    renderResults(data);
-                } catch (err) {
+                    const analysisResult = await analyzeSite(url);
+                    renderResults(analysisResult);
+                } catch (error) {
+                    console.error(error);
                     resultsContent.innerHTML = `
-                        <div class="hacker-box p-8 text-center border-red-700">
-                            <i class="fas fa-exclamation-triangle text-5xl text-red-500 mb-4"></i>
-                            <p class="text-xl text-red-400">فشل التحليل: ${err.message}</p>
-                            <p class="text-sm text-green-600 mt-4">تأكد من الرابط أو جرب لاحقاً.</p>
+                        <div class="bg-red-900 border border-red-700 text-red-200 px-6 py-4 rounded-xl relative" role="alert">
+                            <strong class="font-bold text-xl">خطأ!</strong>
+                            <span class="block mt-2"> حدث خطأ أثناء تحليل الموقع: ${error.message}</span>
+                            <p class="mt-2 text-sm text-red-300">يرجى التحقق من الرابط أو المحاولة لاحقاً. إذا استمرت المشكلة، قد يكون الموقع يحظر الوكيل الخارجي.</p>
                         </div>
                     `;
                 } finally {
-                    loadingIndicator.classList.add('hidden');
+                    loadingIndicator.style.display = 'none';
                 }
             });
+
+            // تصدير التقرير
+            exportBtn.addEventListener('click', () => {
+                if (!lastResultData) return;
+                const dataStr = JSON.stringify(lastResultData, null, 2);
+                const blob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `secureanalyzer-${lastResultData.domain}-${Date.now()}.json`;
+                a.click();
+                URL.revokeObjectURL(url);
+            });
+
         })();
     </script>
 </body>
