@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>أداة تحليل أمان المواقع المتقدمة</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js للرسوم البيانية -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <!-- Font Awesome للأيقونات -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .loader {
+            border-top-color: transparent;
+            animation: spin 1s linear infinite;
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+        .card-hover:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2), 0 10px 10px -5px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans antialiased">
+
+    <!-- شريط التنويـة العلوي -->
+    <nav class="gradient-bg text-white shadow-lg">
+        <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+            <div class="text-2xl font-bold flex items-center">
+                <i class="fas fa-shield-hover ml-3"></i>
+                <span>SecureAnalyzer</span>
+            </div>
+            <div class="text-sm">
+                <span class="bg-white text-purple-700 rounded-full px-3 py-1 font-semibold">الإصدار 2.0</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- رأس الصفحة مع نموذج الإدخال -->
+    <header class="gradient-bg text-white py-12">
+        <div class="container mx-auto px-6 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold mb-4">تحليل أمان أي موقع في ثوانٍ</h1>
+            <p class="text-xl mb-8 opacity-90">أدخل رابط الموقع للحصول على تقرير شامل عن التقنيات والثغرات وتوصيات الأمان</p>
+            <div class="max-w-3xl mx-auto bg-white rounded-lg shadow-xl p-2 flex flex-col md:flex-row">
+                <input type="url" id="urlInput" placeholder="https://example.com" 
+                       class="flex-1 px-4 py-3 text-gray-700 rounded-md md:rounded-r-md md:rounded-l-none focus:outline-none focus:ring-2 focus:ring-purple-300 border-0 rtl:text-right" 
+                       value="https://englishlive.ef.com">
+                <button id="analyzeBtn" class="mt-2 md:mt-0 bg-purple-600 hover:bg-purple-700 text-white font-semibold py-3 px-8 rounded-md md:rounded-l-md md:rounded-r-none transition duration-300 flex items-center justify-center">
+                    <i class="fas fa-search ml-2"></i>
+                    <span>تحليل الموقع</span>
+                </button>
+            </div>
+            <div class="mt-4 text-sm opacity-80 flex flex-wrap justify-center gap-4">
+                <span><i class="fas fa-check-circle ml-1"></i> تحليل التقنيات</span>
+                <span><i class="fas fa-check-circle ml-1"></i> فحص الثغرات</span>
+                <span><i class="fas fa-check-circle ml-1"></i> تقييم SSL/TLS</span>
+                <span><i class="fas fa-check-circle ml-1"></i> كشف البيانات الحساسة</span>
+            </div>
+        </div>
+    </header>
+
+    <!-- منطقة عرض النتائج -->
+    <main class="container mx-auto px-6 py-8" id="resultsArea" style="display: none;">
+        <!-- شريط التقدم والحالة -->
+        <div id="loadingIndicator" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div class="bg-white rounded-lg p-6 shadow-xl flex flex-col items-center">
+                <div class="loader ease-linear rounded-full border-4 border-t-4 border-gray-200 h-16 w-16 mb-4"></div>
+                <p class="text-lg font-semibold text-gray-700">جاري التحليل... قد يستغرق ذلك بضع ثوانٍ</p>
+            </div>
+        </div>
+
+        <!-- النتائج الفعلية -->
+        <div id="resultsContent">
+            <!-- سيتم تعبئتها بواسطة JavaScript -->
+        </div>
+    </main>
+
+    <!-- قسم المساعدة والتوثيق -->
+    <footer class="bg-gray-800 text-white py-8 mt-12">
+        <div class="container mx-auto px-6 text-center">
+            <p class="text-lg font-semibold mb-2">تم التطوير بواسطة <span class="text-purple-400">أداة تحليل الأمان</span></p>
+            <p class="text-sm opacity-75 mb-4">لأغراض تعليمية وتحسين أمان المواقع. استخدم فقط على المواقع التي تملك إذنًا بفحصها.</p>
+            <div class="flex justify-center space-x-4 space-x-reverse">
+                <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-github fa-2x"></i></a>
+                <a href="#" class="text-gray-400 hover:text-white transition"><i class="fab fa-twitter fa-2x"></i></a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        (function() {
+            // عناصر DOM
+            const urlInput = document.getElementById('urlInput');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            const resultsArea = document.getElementById('resultsArea');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            const resultsContent = document.getElementById('resultsContent');
+
+            // دالة مساعدة للحصول على الرابط مع البروتوكول
+            function normalizeUrl(url) {
+                if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                    return 'https://' + url;
+                }
+                return url;
+            }
+
+            // استخراج اسم النطاق من الرابط
+            function extractDomain(url) {
+                try {
+                    const parsed = new URL(url);
+                    return parsed.hostname;
+                } catch (e) {
+                    return url.replace(/^https?:\/\//, '').split('/')[0];
+                }
+            }
+
+            // --- خدمات التحليل ---
+
+            // 1. جلب محتوى الصفحة عبر proxy (لتجاوز CORS)
+            async function fetchPageContent(url) {
+                const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`;
+                const response = await fetch(proxyUrl);
+                if (!response.ok) throw new Error(`فشل جلب الصفحة: ${response.status}`);
+                return await response.text();
+            }
+
+            // 2. تحليل التقنيات من HTML
+            function detectTechnologies(html, url) {
+                const technologies = [];
+                
+                // الكشف عن أنظمة إدارة المحتوى
+                if (html.includes('wp-content') || html.includes('wordpress')) {
+                    technologies.push({ name: 'WordPress', category: 'CMS', icon: 'fab fa-wordpress' });
+                }
+                if (html.includes('Joomla') || html.includes('com_content')) {
+                    technologies.push({ name: 'Joomla', category: 'CMS', icon: 'fas fa-cube' });
+                }
+                if (html.includes('Drupal') || html.includes('drupal.js')) {
+                    technologies.push({ name: 'Drupal', category: 'CMS', icon: 'fab fa-drupal' });
+                }
+
+                // الكشف عن مكتبات JavaScript
+                if (html.includes('react.js') || html.includes('react.min.js') || html.includes('react-dom')) {
+                    technologies.push({ name: 'React', category: 'JavaScript Framework', icon: 'fab fa-react' });
+                }
+                if (html.includes('vue.js') || html.includes('vue.min.js')) {
+                    technologies.push({ name: 'Vue.js', category: 'JavaScript Framework', icon: 'fab fa-vuejs' });
+                }
+                if (html.includes('angular.js') || html.includes('angular.min.js')) {
+                    technologies.push({ name: 'AngularJS', category: 'JavaScript Framework', icon: 'fab fa-angular' });
+                }
+                if (html.includes('jquery') || html.includes('jQuery')) {
+                    technologies.push({ name: 'jQuery', category: 'JavaScript Library', icon: 'fas fa-code' });
+                }
+                if (html.includes('bootstrap.css') || html.includes('bootstrap.min.css')) {
+                    technologies.push({ name: 'Bootstrap', category: 'CSS Framework', icon: 'fab fa-bootstrap' });
+                }
+                if (html.includes('tailwind')) {
+                    technologies.push({ name: 'Tailwind CSS', category: 'CSS Framework', icon: 'fas fa-wind' });
+                }
+
+                // الكشف عن خادم الويب من رؤوس (قد لا تتوفر)
+                if (html.includes('nginx')) {
+                    technologies.push({ name: 'Nginx', category: 'Web Server', icon: 'fas fa-server' });
+                }
+                if (html.includes('apache')) {
+                    technologies.push({ name: 'Apache', category: 'Web Server', icon: 'fas fa-server' });
+                }
+
+                // إضافة تقنية عامة للغة البرمجة من الامتدادات أو مسارات
+                if (url.includes('.php') || html.includes('.php')) {
+                    technologies.push({ name: 'PHP', category: 'Programming Language', icon: 'fab fa-php' });
+                }
+                if (html.includes('asp.net') || url.includes('.aspx')) {
+                    technologies.push({ name: 'ASP.NET', category: 'Programming Language', icon: 'fab fa-microsoft' });
+                }
+                if (html.includes('csrf-token') || html.includes('_token')) {
+                    technologies.push({ name: 'CSRF Protection', category: 'Security', icon: 'fas fa-shield' });
+                }
+
+                return technologies;
+            }
+
+            // 3. فحص الثغرات الأساسي
+            function detectVulnerabilities(html, url, headers) {
+                const vulnerabilities = [];
+
+                // الكشف عن نماذج بدون رمز CSRF
+                const formMatches = html.match(/<form.*?>.*?<\/form>/gis);
+                if (formMatches) {
+                    formMatches.forEach((form, index) => {
+                        if (!form.includes('csrf') && !form.includes('_token') && !form.includes('authenticity_token')) {
+                            vulnerabilities.push({
+                                type: 'نقص CSRF',
+                                severity: 'medium',
+                                description: 'نموذج رقم ' + (index+1) + ' يفتقد إلى رمز حماية CSRF، قد يكون عرضة لهجمات التزوير.',
+                                recommendation: 'أضف رمز CSRF فريد لكل نموذج وتحقق منه على الخادم.'
+                            });
+                        }
+                    });
+                }
+
+                // الكشف عن روابط قد تكون عرضة لـ XSS
+                const scriptTags = html.match(/<script.*?>.*?<\/script>/gis);
+                if (scriptTags && scriptTags.length > 5) { // مجرد مثال
+                    vulnerabilities.push({
+                        type: 'كثرة استخدام JavaScript',
+                        severity: 'low',
+                        description: 'يوجد العديد من وسوم <script>، تأكد من تعقيم المدخلات بشكل صحيح.',
+                        recommendation: 'طبق سياسة أمان المحتوى (CSP) واستخدم المدخلات الآمنة.'
+                    });
+                }
+
+                // كشف ثغرة حقن SQL محتملة من وجود معلمات في URL
+                if (url.includes('?') && (url.includes('=') && (url.includes('id=') || url.includes('page=')))) {
+                    vulnerabilities.push({
+                        type: 'SQL Injection محتمل',
+                        severity: 'high',
+                        description: 'الرابط يحتوي على معلمات (parameters) قد تكون عرضة للحقن إذا لم يتم تعقيمها.',
+                        recommendation: 'استخدم استعلامات معدة مسبقاً (Prepared Statements) وتعقيم المدخلات.'
+                    });
+                }
+
+                // فحص الرؤوس الأمنية
+                if (headers) {
+                    if (!headers['content-security-policy']) {
+                        vulnerabilities.push({
+                            type: 'نقص CSP',
+                            severity: 'medium',
+                            description: 'رأس Content-Security-Policy مفقود، مما يزيد خطر هجمات XSS.',
+                            recommendation: 'أضف رأس CSP مناسب.'
+                        });
+                    }
+                    if (!headers['x-frame-options']) {
+                        vulnerabilities.push({
+                            type: 'نقص X-Frame-Options',
+                            severity: 'medium',
+                            description: 'الموقع قد يكون عرضة للهجمات clickjacking.',
+                            recommendation: 'أضف رأس X-Frame-Options: DENY أو SAMEORIGIN.'
+                        });
+                    }
+                    if (!headers['strict-transport-security']) {
+                        vulnerabilities.push({
+                            type: 'نقص HSTS',
+                            severity: 'low',
+                            description: 'رأس Strict-Transport-Security مفقود، يفضل تفعيل HSTS.',
+                            recommendation: 'أضف رأس Strict-Transport-Security مع max-age كبير.'
+                        });
+                    }
+                }
+
+                return vulnerabilities;
+            }
+
+            // 4. كشف البيانات الحساسة في الصفحة
+            function detectSensitiveData(html) {
+                const sensitive = [];
+
+                // البحث عن عناوين بريد إلكتروني
+                const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+                const emails = html.match(emailRegex);
+                if (emails) {
+                    // إزالة التكرار وعرض أول 3
+                    const uniqueEmails = [...new Set(emails)].slice(0, 3);
+                    sensitive.push({ type: 'عناوين بريد إلكتروني', data: uniqueEmails.join('، ') });
+                }
+
+                // البحث عن مفاتيح API محتملة (أنماط شائعة)
+                const apiKeyRegex = /(api[_-]?key|apikey|secret|token)["']?\s*[:=]\s*["']([a-zA-Z0-9_\-]{16,})["']/gi;
+                const apiKeys = html.match(apiKeyRegex);
+                if (apiKeys) {
+                    sensitive.push({ type: 'مفاتيح API محتملة', data: 'تم العثور على ' + apiKeys.length + ' مفتاح. تحقق منها.' });
+                }
+
+                // البحث عن أرقام هواتف (نمط بسيط)
+                const phoneRegex = /(\+?\d{1,3}[-.\s]?)?(\(?\d{2,4}\)?[-.\s]?)?\d{3,4}[-.\s]?\d{3,4}/g;
+                const phones = html.match(phoneRegex);
+                if (phones) {
+                    sensitive.push({ type: 'أرقام هواتف', data: phones.slice(0, 2).join('، ') + (phones.length > 2 ? '...' : '') });
+                }
+
+                return sensitive;
+            }
+
+            // 5. فحص SSL/TLS باستخدام SSL Labs API
+            async function checkSSL(host) {
+                try {
+                    const apiUrl = `https://api.ssllabs.com/api/v3/analyze?host=${encodeURIComponent(host)}&fromCache=on&all=done`;
+                    const response = await fetch(apiUrl);
+                    if (!response.ok) throw new Error('فشل الاتصال بـ SSL Labs');
+                    const data = await response.json();
+                    
+                    if (data.status === 'READY' || data.status === 'READY' && data.endpoints) {
+                        const endpoint = data.endpoints[0];
+                        const grade = endpoint.grade || '?';
+                        let details = '';
+                        if (endpoint.details) {
+                            details = `البروتوكولات: ${endpoint.details.protocols.map(p => p.name).join(', ')}`;
+                        }
+                        return { grade, details, raw: data };
+                    } else {
+                        return { grade: '?', details: 'التحليل لم يكتمل بعد، حاول مجدداً لاحقاً' };
+                    }
+                } catch (e) {
+                    console.error('SSL check error:', e);
+                    return { grade: '?', details: 'تعذر فحص SSL', error: e.message };
+                }
+            }
+
+            // 6. الحصول على الرؤوس الأمنية عبر proxy (رأس واحد)
+            async function fetchHeaders(url) {
+                try {
+                    // نستخدم HEAD عبر الوكيل
+                    const proxyUrl = `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}&method=HEAD`;
+                    const response = await fetch(proxyUrl, { method: 'HEAD' });
+                    const headers = {};
+                    response.headers.forEach((value, key) => {
+                        headers[key.toLowerCase()] = value;
+                    });
+                    return headers;
+                } catch (e) {
+                    console.error('Headers fetch error:', e);
+                    return null;
+                }
+            }
+
+            // 7. تقييم الدرجة الشاملة (A-F)
+            function calculateOverallGrade(sslGrade, vulnerabilities, headers, sensitive) {
+                let score = 100;
+
+                // خصم بناءً على SSL
+                if (sslGrade === 'A+' || sslGrade === 'A') score -= 0;
+                else if (sslGrade === 'B') score -= 10;
+                else if (sslGrade === 'C') score -= 20;
+                else if (sslGrade === 'D' || sslGrade === 'E' || sslGrade === 'F') score -= 40;
+                else score -= 15; // غير معروف
+
+                // خصم الثغرات
+                vulnerabilities.forEach(v => {
+                    if (v.severity === 'high') score -= 15;
+                    else if (v.severity === 'medium') score -= 8;
+                    else if (v.severity === 'low') score -= 3;
+                });
+
+                // خصم البيانات الحساسة
+                if (sensitive.length > 0) score -= 10;
+
+                // تحديد الدرجة
+                if (score >= 90) return { grade: 'A', color: 'green' };
+                if (score >= 75) return { grade: 'B', color: 'blue' };
+                if (score >= 60) return { grade: 'C', color: 'yellow' };
+                if (score >= 40) return { grade: 'D', color: 'orange' };
+                return { grade: 'F', color: 'red' };
+            }
+
+            // دالة تحليل الموقع الرئيسية
+            async function analyzeSite(url) {
+                const domain = extractDomain(url);
+                
+                // جلب محتوى الصفحة
+                const html = await fetchPageContent(url);
+                
+                // جلب الرؤوس
+                const headers = await fetchHeaders(url);
+                
+                // تحليل التقنيات
+                const technologies = detectTechnologies(html, url);
+                
+                // فحص الثغرات
+                const vulnerabilities = detectVulnerabilities(html, url, headers);
+                
+                // كشف البيانات الحساسة
+                const sensitiveData = detectSensitiveData(html);
+                
+                // فحص SSL
+                const sslResult = await checkSSL(domain);
+                
+                // الدرجة النهائية
+                const overall = calculateOverallGrade(sslResult.grade, vulnerabilities, headers, sensitiveData);
+                
+                return {
+                    url,
+                    domain,
+                    technologies,
+                    vulnerabilities,
+                    sensitiveData,
+                    ssl: sslResult,
+                    overall,
+                    headers
+                };
+            }
+
+            // دالة عرض النتائج في الصفحة
+            function renderResults(data) {
+                let html = `
+                    <!-- ملخص التقييم -->
+                    <div class="bg-white rounded-lg shadow-xl p-6 mb-8 card-hover">
+                        <div class="flex flex-col md:flex-row items-center justify-between">
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-800 mb-2">تقرير أمان ${data.domain}</h2>
+                                <p class="text-gray-600">تم التحليل في ${new Date().toLocaleString('ar-EG')}</p>
+                            </div>
+                            <div class="mt-4 md:mt-0 flex items-center">
+                                <div class="text-center ml-4">
+                                    <div class="text-6xl font-bold" style="color: ${data.overall.color === 'red' ? '#ef4444' : data.overall.color === 'orange' ? '#f97316' : data.overall.color === 'yellow' ? '#eab308' : data.overall.color === 'green' ? '#22c55e' : '#3b82f6'}">
+                                        ${data.overall.grade}
+                                    </div>
+                                    <div class="text-sm text-gray-500">التقييم العام</div>
+                                </div>
+                                <div class="border-r-2 border-gray-300 h-12 mx-4 hidden md:block"></div>
+                                <div class="text-center">
+                                    <div class="text-4xl font-bold text-gray-800">${data.ssl.grade}</div>
+                                    <div class="text-sm text-gray-500">درجة SSL</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- شبكة البطاقات -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <!-- التقنيات المكتشفة -->
+                        <div class="bg-white rounded-lg shadow-lg p-6 card-hover">
+                            <div class="flex items-center mb-4">
+                                <i class="fas fa-code text-2xl text-purple-600 ml-3"></i>
+                                <h3 class="text-xl font-semibold">التقنيات المستخدمة</h3>
+                            </div>
+                            <ul class="space-y-2">
+                `;
+
+                if (data.technologies.length > 0) {
+                    data.technologies.forEach(tech => {
+                        html += `<li class="flex items-center"><i class="${tech.icon || 'fas fa-puzzle-piece'} ml-2 text-gray-600"></i> <span class="font-medium">${tech.name}</span> <span class="mr-auto text-sm text-gray-500">${tech.category}</span></li>`;
+                    });
+                } else {
+                    html += `<li class="text-gray-500">لم يتم اكتشاف تقنيات محددة</li>`;
+                }
+
+                html += `
+                            </ul>
+                        </div>
+
+                        <!-- SSL/TLS -->
+                        <div class="bg-white rounded-lg shadow-lg p-6 card-hover">
+                            <div class="flex items-center mb-4">
+                                <i class="fas fa-lock text-2xl text-green-600 ml-3"></i>
+                                <h3 class="text-xl font-semibold">شهادة SSL/TLS</h3>
+                            </div>
+                            <div class="text-center p-4">
+                                <div class="text-5xl font-bold ${data.ssl.grade === 'A' || data.ssl.grade === 'A+' ? 'text-green-600' : 'text-orange-500'}">${data.ssl.grade}</div>
+                                <p class="mt-2 text-gray-600">${data.ssl.details || 'تفاصيل غير متوفرة'}</p>
+                            </div>
+                        </div>
+
+                        <!-- الرؤوس الأمنية -->
+                        <div class="bg-white rounded-lg shadow-lg p-6 card-hover">
+                            <div class="flex items-center mb-4">
+                                <i class="fas fa-headers text-2xl text-blue-600 ml-3"></i>
+                                <h3 class="text-xl font-semibold">الرؤوس الأمنية</h3>
+                            </div>
+                            <ul class="space-y-2">
+                `;
+
+                const importantHeaders = ['content-security-policy', 'x-frame-options', 'strict-transport-security', 'x-content-type-options', 'referrer-policy'];
+                if (data.headers) {
+                    importantHeaders.forEach(h => {
+                        const exists = data.headers[h];
+                        html += `<li class="flex justify-between"><span>${h}</span> <span class="${exists ? 'text-green-600' : 'text-red-600'}">${exists ? '✓ موجود' : '✗ مفقود'}</span></li>`;
+                    });
+                } else {
+                    html += `<li class="text-gray-500">لم نتمكن من جلب الرؤوس</li>`;
+                }
+
+                html += `
+                            </ul>
+                        </div>
+                    </div>
+
+                    <!-- الثغرات الأمنية -->
+                    <div class="bg-white rounded-lg shadow-lg p-6 mt-6 card-hover">
+                        <div class="flex items-center mb-4">
+                            <i class="fas fa-bug text-2xl text-red-600 ml-3"></i>
+                            <h3 class="text-xl font-semibold">الثغرات الأمنية المكتشفة</h3>
+                        </div>
+                        ${data.vulnerabilities.length > 0 ? `
+                            <div class="space-y-4">
+                                ${data.vulnerabilities.map(v => `
+                                    <div class="border-r-4 ${v.severity === 'high' ? 'border-red-500' : v.severity === 'medium' ? 'border-yellow-500' : 'border-blue-500'} bg-gray-50 p-4 rounded">
+                                        <div class="flex items-center">
+                                            <span class="font-bold text-lg">${v.type}</span>
+                                            <span class="mr-auto px-2 py-1 text-xs rounded-full ${v.severity === 'high' ? 'bg-red-200 text-red-800' : v.severity === 'medium' ? 'bg-yellow-200 text-yellow-800' : 'bg-blue-200 text-blue-800'}">${v.severity}</span>
+                                        </div>
+                                        <p class="mt-2 text-gray-700">${v.description}</p>
+                                        <p class="mt-1 text-sm text-gray-600"><span class="font-semibold">توصية:</span> ${v.recommendation}</p>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : '<p class="text-green-600">لم يتم العثور على ثغرات واضحة، ولكن يُنصح بإجراء فحص أعمق.</p>'}
+                    </div>
+
+                    <!-- البيانات الحساسة -->
+                    <div class="bg-white rounded-lg shadow-lg p-6 mt-6 card-hover">
+                        <div class="flex items-center mb-4">
+                            <i class="fas fa-eye-slash text-2xl text-orange-600 ml-3"></i>
+                            <h3 class="text-xl font-semibold">بيانات حساسة محتملة</h3>
+                        </div>
+                        ${data.sensitiveData.length > 0 ? `
+                            <ul class="list-disc list-inside space-y-2">
+                                ${data.sensitiveData.map(item => `<li><span class="font-medium">${item.type}:</span> ${item.data}</li>`).join('')}
+                            </ul>
+                            <p class="mt-3 text-sm text-red-600">إذا كانت هذه البيانات خاصة، فيجب إزالتها من الكود المصدري.</p>
+                        ` : '<p class="text-gray-600">لم يتم العثور على بيانات حساسة واضحة.</p>'}
+                    </div>
+                `;
+
+                resultsContent.innerHTML = html;
+            }
+
+            // حدث النقر على زر التحليل
+            analyzeBtn.addEventListener('click', async () => {
+                const rawUrl = urlInput.value.trim();
+                if (!rawUrl) {
+                    alert('الرجاء إدخال رابط الموقع');
+                    return;
+                }
+
+                const url = normalizeUrl(rawUrl);
+                
+                // إظهار مؤشر التحميل
+                resultsArea.style.display = 'block';
+                loadingIndicator.classList.remove('hidden');
+                
+                // محتوى مؤقت
+                resultsContent.innerHTML = '<div class="text-center py-20 text-gray-600">جاري تحميل النتائج...</div>';
+
+                try {
+                    const analysisResult = await analyzeSite(url);
+                    renderResults(analysisResult);
+                } catch (error) {
+                    console.error(error);
+                    resultsContent.innerHTML = `
+                        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                            <strong class="font-bold">خطأ!</strong>
+                            <span class="block sm:inline"> حدث خطأ أثناء تحليل الموقع: ${error.message}</span>
+                            <p class="mt-2 text-sm">يرجى التحقق من الرابط أو المحاولة لاحقاً. إذا استمرت المشكلة، قد يكون الموقع يحظر الوكيل الخارجي.</p>
+                        </div>
+                    `;
+                } finally {
+                    loadingIndicator.classList.add('hidden');
+                }
+            });
+
+            // تحميل مثال تلقائي عند فتح الصفحة
+            window.addEventListener('load', () => {
+                // يمكن إضافة تحليل تلقائي لعنصر placeholder، لكن نتركه للمستخدم
+            });
+        })();
+    </script>
+</body>
+</html>
